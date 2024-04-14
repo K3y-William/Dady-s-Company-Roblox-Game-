@@ -1,0 +1,86 @@
+
+local manager = require(game.ServerStorage.GameManager.GameManager)
+local prompt = script.Parent.ProximityPrompt
+
+local debanger = workspace.Debuggers.Debugger
+--local player = game:GetService("Players")
+local RS = game:GetService("ReplicatedStorage")
+local remoteEvent = RS:FindFirstChildOfClass("RemoteEvent")
+
+local CoderDialog = workspace.Debuggers.DBOpening.SurfaceGui.CoderDialog;
+CoderDialog.Visible = true;
+local CoderDialog = workspace.Debuggers.DbGivenCode.SurfaceGui.CoderDialog;
+CoderDialog.Visible = false;
+local CoderDialog = workspace.Debuggers.DbGivesCode.SurfaceGui.CoderDialog;
+CoderDialog.Visible = false;
+
+function pressNumber ()
+	local CoderDialog = workspace.Debuggers.DBOpening.SurfaceGui.CoderDialog;
+	CoderDialog.Visible =false;
+	local CoderDialog = workspace.Debuggers.DbGivenCode.SurfaceGui.CoderDialog;
+	CoderDialog.Visible = true;
+	local CoderDialog = workspace.Debuggers.DbGivesCode.SurfaceGui.CoderDialog;
+	CoderDialog.Visible = false;
+	local numba = 0
+	while numba == 0 do
+		task.wait()
+		remoteEvent.OnServerEvent:Connect(function(player, number)
+			numba = number
+		end)
+	end
+	print(numba)
+	return numba
+end
+
+function dbug (debag)
+	local check = 0
+	local number = pressNumber()
+	local usb = manager.taskList[number]
+	if usb.withBug == false then
+		print("no bugs to debug")
+		return
+	end
+	if debag:GetAttribute("state") == -1 then
+		print("busy")
+		return
+	end
+	if debag:GetAttribute("state") == 1 and usb.job_availability == false then
+		usb.job_availability = true
+		usb.withBug = false
+		usb.job_progress = 2
+		print("done")
+	elseif usb.job_availability == true and debag:GetAttribute("state") == 0 then
+		local counter = tick()
+		usb.job_availability = false
+		debag:SetAttribute("state", -1)
+		print("debugging")
+		while tick() - counter < 15 do
+			task.wait()
+		end
+		debag:SetAttribute("state", 1)
+		print("Pick up code!")
+		local CoderDialog = workspace.Debuggers.DBOpening.SurfaceGui.CoderDialog;
+		CoderDialog.Visible = false;
+		local CoderDialog = workspace.Debuggers.DbGivenCode.SurfaceGui.CoderDialog;
+		CoderDialog.Visible = false;
+		local CoderDialog = workspace.Debuggers.DbGivesCode.SurfaceGui.CoderDialog;
+		CoderDialog.Visible = true;
+		while tick() - counter < 15 do
+			task.wait()
+			if usb.job_availability == true then
+				debag:SetAttribute("state", 0)
+				check = 1
+				return
+			end
+		end
+		if check == 0 then
+			usb.withBug = true
+		end
+		debag:SetAttribute("state", 0)
+		return
+	end
+end
+
+prompt.Triggered:Connect(function()
+	dbug(debanger)
+end)
