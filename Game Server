@@ -1,0 +1,127 @@
+local manager = {}
+manager.taskList = {}
+
+manager.totalMoney = 0
+manager.Changed = Instance.new("BindableEvent")
+-- Function to update the totalMoney value
+function manager.updateTotalMoney(addMoney)
+	manager.totalMoney += addMoney
+	manager.Changed:Fire()
+end
+
+
+manager.Job = {
+	job_id = nil, --id of the task
+	job_type = 0, --type of task    1:only F    2:only B    3:both F and B
+	--0 default --Job type 1: need only back end code --Job type 2: need only front end code --Job type 3: need both front and back end code
+	job_availability = true, --while the job is doing by someone, change the state to false	
+
+	--need to check the job_type, and then decide codeF and codeE status
+	codeF = false, --need front end code 
+	codeB = false, --need back end code 
+	withBug = false, --buggish or not, initially set to no Bug
+	job_progress = 0, --0 = start, 1 =finishCoding, 2 = finishDebug, 3 = finishPrint
+	--job_completed = false, --if the job is completed
+	--job_failed = false, --if the job failed
+
+	job_reward = 100, --reward for the job
+	job_start_time = 0, --when the job started
+	timeLimit = 120 --time limit of the 
+
+}
+
+function manager.Job:new(job_id, job_type, job_reward, timeLimit)
+	local o = {} -- Declare o as a local variable
+	setmetatable(o, self)
+	self.__index = self
+	o.job_id = job_id -- Use o instead of self to assign the job_id
+	o.job_type = job_type or 0
+	o.job_reward = job_reward or 0
+
+	if (job_type == 1) then
+		o.codeB = true --no need for B
+	elseif (job_type == 2) then
+		o.codeF = true --no need for F
+	else               --need both
+		o.codeF = false
+		o.codeB = false
+	end
+
+	o.timeLimit = timeLimit or 120
+	o.job_start_time = tick()
+	return o
+end
+
+
+manager.Job.print = function(self)
+	print("Job ID:", self.job_id)
+	print("Job Type:", self.job_type)
+	print("Job Availability:", self.job_availability)
+	print("Code F:", self.codeF)
+	print("Code B:", self.codeB)
+	print("With Bug:", self.withBug)
+	print("Job Progress:", self.job_progress)
+	print("Job Completed:", self.job_completed)
+	print("Job Failed:", self.job_failed)
+	print("Job Reward:", self.job_reward)
+	print("Job Start Time:", self.job_start_time)
+	print("Time Limit:", self.timeLimit)
+end
+
+
+function manager.getJob(index)
+	local job = manager.taskList[index]
+	if job then
+		job:print()
+	else
+		print("Invalid index")
+	end
+end
+
+
+function manager.printTaskList()
+	print("Task List:")
+	for job_id, job in pairs(manager.taskList) do
+		print("------------------------")
+		--job:print()
+		print(job_id,job.job_type)
+	end
+	print("------------------------")
+end
+
+
+function manager.Job:checkTime(job_id)
+	local timeUsed = tick() - manager.taskList[job_id].job_start_time
+	print("submit: " .. manager.taskList[job_id].job_reward)
+	if (timeUsed > manager.taskList[job_id].timeLimit) then
+		manager.taskList[job_id].job_reward -= 100
+		print("after: " .. manager.taskList[job_id].job_reward)
+	end
+end
+
+
+function manager.getMoneyEarned()
+	return manager.totalMoney
+end
+
+function manager.addTask(jobData)
+	local job = manager.Job:new(jobData.job_id, jobData.job_type, jobData.job_reward, jobData.timeLimit)
+	manager.taskList[jobData.job_id] = job
+
+end
+
+function manager.submitTask(job_id)
+	local job = manager.taskList[job_id]
+	if job then
+		if job.job_progress == 3 then
+			job:checkTime(job_id)
+			
+			manager.updateTotalMoney(job.job_reward)
+			--manager.taskList[job_id] = nil
+			table.remove(manager.taskList, job_id)
+		end
+		
+	end
+end
+
+return manager
