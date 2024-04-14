@@ -1,0 +1,66 @@
+local manager = require(game.ServerStorage.GameManager.GameManager)
+local coder = script.Parent
+local remoteEvent = game:GetService("ReplicatedStorage"):FindFirstChildOfClass("RemoteEvent")
+
+local CoderDialog = workspace.Coders.CoderOpening.SurfaceGui.CoderDialog;
+CoderDialog.Visible = true;
+local CoderDialog = workspace.Coders.CoderGivenCode.SurfaceGui.CoderDialog;
+CoderDialog.Visible = false;
+local CoderDialog = workspace.Coders.CoderGivesCode.SurfaceGui.CoderDialog;
+CoderDialog.Visible = false;
+
+local function selectJob()
+	local CoderDialog = workspace.Coders.CoderOpening.SurfaceGui.CoderDialog;
+	CoderDialog.Visible = false;
+	local CoderDialog = workspace.Coders.CoderGivenCode.SurfaceGui.CoderDialog;
+	CoderDialog.Visible = true;
+	local CoderDialog = workspace.Coders.CoderGivesCode.SurfaceGui.CoderDialog;
+	CoderDialog.Visible = false;
+	local numba = 0
+	while numba == 0 do
+		task.wait()
+		remoteEvent.OnServerEvent:Connect(function(player, number)
+			numba = number
+		end)
+	end
+	return numba
+end
+
+local function doJob(coder,taskList)
+	local selection = selectJob()
+	print(selection)
+	local job = taskList[selection]
+	if coder:GetAttribute("state") == 1 and job.job_availability == false then
+		if math.random(1, 100) < coder:GetAttribute("bugProb") then
+			job.withBug = true
+		end
+		if (job.job_type == 1 and job.codeF) or (job.job_type == 2 and job.codeB) or (job.job_type == 3 and job.codeF and job.codeB) then
+			job.job_progress = 1
+		end
+		job.job_availability = true
+		coder:SetAttribute("state",0)
+		print("done")
+	elseif (job.job_type == 3 or job.job_type == coder:GetAttribute("job")) and coder:GetAttribute("state") == 0 then
+		print("coding")
+		-- update attributes when coding
+		coder:SetAttribute("state",-1)
+		coder:SetAttribute("progress",0)
+		job.job_availability = false
+		-- update attributes when done
+		wait(coder:GetAttribute("timeWork"))
+		coder:SetAttribute("state",1)
+		local CoderDialog = workspace.Coders.CoderOpening.SurfaceGui.CoderDialog;
+		CoderDialog.Visible = false;
+		local CoderDialog = workspace.Coders.CoderGivenCode.SurfaceGui.CoderDialog;
+		CoderDialog.Visible = false;
+		local CoderDialog = workspace.Coders.CoderGivesCode.SurfaceGui.CoderDialog;
+		CoderDialog.Visible = true;
+		job.codeB = true
+		wait(coder:GetAttribute("timeWait"))
+		print("Pick up B!")
+	else
+		print("help")
+	end
+end
+
+coder.Torso.ProximityPrompt.Triggered:Connect(function() doJob(coder,manager.taskList) end)
