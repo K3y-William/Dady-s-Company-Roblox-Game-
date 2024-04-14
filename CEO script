@@ -1,0 +1,22 @@
+local button = script.Parent.ProximityPrompt
+local manager = require(game.ServerStorage.GameManager.GameManager)
+local remoteEvent = game:GetService("ReplicatedStorage"):FindFirstChildOfClass("RemoteEvent")
+
+local function selectJob()
+	local numba = 0
+	while numba == 0 do
+		task.wait()
+		remoteEvent.OnServerEvent:Connect(function(player, number)
+			numba = number
+		end)
+	end
+	return numba
+end
+
+local function checkJob(taskList)
+	local selection = selectJob()
+	local job = taskList[selection]
+	manager.submitTask(selection)
+end
+
+button.Triggered:Connect(function() checkJob(manager.taskList) end)
